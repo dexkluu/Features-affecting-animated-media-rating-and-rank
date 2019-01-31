@@ -1,0 +1,276 @@
+---
+title: "Features Affecting Anime Popularity and Scoring"
+author: "Dexter Luu"
+output: pdf_document
+indent: TRUE
+---
+```{r, include = FALSE}
+### STAT 596 Project
+rm(list=ls())
+
+## Make sure you have these packages installed!
+library(gridExtra)
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+options(knitr.table.format = "latex")
+
+## Load data
+# Change path if needed
+df = read.csv('anime_info.csv')
+
+cleanlists = function(x){
+  # x is the genre and voice actor column in the data
+  # coerce factor to characters
+  # Will be used to replace original voice actor and genre columns in dataset
+  vec = as.character(x)
+  
+  # Make vector of elements of interest
+  format = substr(vec,3,nchar(vec)-2) # Gets rid of brackets in string
+  namevec = strsplit(format,"', '")
+  return(namevec)
+}
+
+df$voice.actors=sapply(df$voice.actors, FUN=cleanlists)
+df$genres=sapply(df$genres, FUN=cleanlists)
+
+Counter = function(lst){
+  # lst is the voice.actors list or genre list created by cleanlists
+  # Returns a table of the unique voice actors or genres and their counts in the dataset
+  vec = c()
+  for (i in lst){
+    vec = append(vec,i)
+  }
+  Counts = sort(table(vec),decreasing = TRUE)
+  return(Counts)
+}
+vactorCount = Counter(df$voice.actors)
+genreCount = Counter(df$genres)
+
+find_in = function(lst,feature){
+  # To be used along with sapply for conditional indexing
+  return(feature %in% lst)
+}
+
+########### Data exploration
+### Genres
+genre.names = names(genreCount[genreCount >= 20])
+genre.means = rep(0,length(genre.names))
+genre.stds = rep(0,length(genre.names))
+genre.ranks = rep(0,length(genre.names))
+genre.rankstd = rep(0,length(genre.names))
+ind = 0
+for (i in genre.names){
+  ind = ind + 1
+  genre.ranks[ind] = mean(df$Rank[sapply(df$genres, FUN = find_in, feature = i)], na.rm = TRUE)
+  genre.rankstd[ind] = sd(df$Rank[sapply(df$genres, FUN = find_in, feature = i)], na.rm = TRUE)
+  genre.means[ind] = mean(df$Score[sapply(df$genres, FUN = find_in, feature = i)], na.rm = TRUE)
+  genre.stds[ind] = sd(df$Score[sapply(df$genres, FUN = find_in, feature = i)], na.rm = TRUE)
+}
+#plot(as.vector(genreCount[genre.names]), genre.means, type = 'p', xlab = 'Genre Count',
+#     ylab = 'Average Rating')
+#plot(as.vector(genreCount[genre.names]), genre.ranks, type = 'p', xlab = 'Genre Count',
+#     ylab = 'Average Rank')
+genre.df = data.frame(counts = genreCount[genre.names], rank.mean = genre.ranks, rank.std = genre.rankstd, score.mean = genre.means, score.std = genre.stds)
+p1 = ggplot(genre.df, aes(x = counts.Freq, y = rank.mean))
+p11 = ggplot(genre.df, aes(x = counts.Freq, y = score.mean))
+plot1 =  p1 + geom_point() + geom_text_repel(aes(label=counts.vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Rank')
+plot2 = p11 + geom_point() + geom_text_repel(aes(label=counts.vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Score')
+
+
+### Voice Actor
+va.names = names(vactorCount[vactorCount >= 20])
+va.names = va.names[1:length(va.names)-1]
+va.means = rep(0,length(va.names))
+va.stds = rep(0,length(va.names))
+va.ranks = rep(0,length(va.names))
+va.rankstd = rep(0,length(va.names))
+ind = 0
+for (i in va.names){
+  ind = ind + 1
+  va.ranks[ind] = mean(df$Rank[sapply(df$voice.actors, FUN = find_in, feature = i)], na.rm = TRUE)
+  va.rankstd[ind] = sd(df$Rank[sapply(df$voice.actors, FUN = find_in, feature = i)], na.rm = TRUE)
+  va.means[ind] = mean(df$Score[sapply(df$voice.actors, FUN = find_in, feature = i)], na.rm = TRUE)
+  va.stds[ind] = sd(df$Score[sapply(df$voice.actors, FUN = find_in, feature = i)], na.rm = TRUE)
+}
+plot(as.vector(vactorCount[va.names]), va.means, type = 'p')
+plot(as.vector(vactorCount[va.names]), va.ranks, type = 'p')
+va.df = data.frame(counts = vactorCount[va.names], rank.mean = va.ranks, rank.std = va.rankstd, score.mean = va.means, score.std = va.stds)
+p2 = ggplot(va.df, aes(x = counts.Freq, y = rank.mean))
+p22 = ggplot(va.df, aes(x = counts.Freq, y=score.mean))
+plot3 = p2 + geom_point() + labs(x = 'Occurrence Count', y = 'Average Rank')
+plot4 = p22 + geom_point() + labs(x = 'Occurrence Count', y = 'Average Rank')
+
+
+### Studios
+studio_vec = as.vector(df$studio)
+studioCount = sort(table(studio_vec), decreasing = TRUE)
+studio.names = names(studioCount[studioCount >= 20])
+studio.means = rep(0,length(studio.names))
+studio.stds = rep(0,length(studio.names))
+studio.ranks = rep(0,length(studio.names))
+studio.rankstd = rep(0,length(studio.names))
+ind = 0
+for (i in studio.names){
+  ind = ind + 1
+  studio.ranks[ind] = mean(df$Rank[studio_vec == i], na.rm = TRUE)
+  studio.rankstd[ind] = sd(df$Rank[studio_vec == i], na.rm = TRUE)
+  studio.means[ind] = mean(df$Score[studio_vec == i], na.rm = TRUE)
+  studio.stds[ind] = sd(df$Score[studio_vec == i], na.rm = TRUE)
+}
+plot(as.vector(studioCount[studio.names]), studio.means, type = 'p')
+plot(as.vector(studioCount[studio.names]), studio.ranks, type = 'p', ylim = c(0,1000))
+arrows(as.vector(studioCount[studio.names]), studio.ranks-studio.rankstd, as.vector(studioCount[studio.names]), studio.ranks+studio.rankstd, length=0.05, angle=90, code=3)
+studio.df = data.frame(counts = studioCount[studio.names], rank.mean = studio.ranks, rank.std = studio.rankstd, score.mean = studio.means, score.std = studio.stds)
+p3 = ggplot(studio.df, aes(x = counts.Freq, y = rank.mean))
+p33 = ggplot(studio.df, aes(x = counts.Freq, y = score.mean))
+plot5 = p3 + geom_point() + geom_text_repel(aes(label=counts.studio_vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Rank')
+plot6 = p33 + geom_point() + geom_text_repel(aes(label=counts.studio_vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Score')
+
+### Media Type
+media_vec = as.vector(df$media.type)
+mediaCount = sort(table(media_vec),decreasing = TRUE)
+media.names = names(mediaCount[mediaCount >= 20])
+media.means = rep(0,length(media.names))
+media.stds = rep(0,length(media.names))
+media.ranks = rep(0,length(media.names))
+media.rankstd = rep(0,length(media.names))
+ind = 0
+for(i in media.names){
+  ind = ind + 1
+  media.ranks[ind] = mean(df$Rank[media_vec == i], na.rm = TRUE)
+  media.rankstd[ind] = sd(df$Rank[media_vec == i], na.rm = TRUE)
+  media.means[ind] = mean(df$Score[media_vec == i], na.rm = TRUE)
+  media.stds[ind] = sd(df$Score[media_vec == i], na.rm = TRUE)
+}
+media.df = data.frame(counts = mediaCount[media.names], rank.mean = media.ranks, rank.std = media.rankstd, score.mean = media.means, score.std = media.stds)
+p4 = ggplot(media.df, aes(x = counts.Freq, y = rank.mean))
+p44 = ggplot(media.df, aes(x = counts.Freq, y = score.mean))
+plot7 = p4 + geom_point() + geom_text_repel(aes(label=counts.media_vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Rank')
+plot8 = p44 + geom_point() + geom_text_repel(aes(label=counts.media_vec),size=3) + labs(x = 'Occurrence Count', y = 'Average Score')
+grid.arrange(plot5,plot6, ncol=2)
+
+# For table in data section
+vadata_show = lapply(df$voice.actors[1:6], FUN = function(x){x[1:4]})
+vadfshow = data.frame(X = df$X[1:6])
+vadfshow$voice.actors = vadata_show
+
+# Result table fn
+resulttable = function(rank_vec, rank_stds, score_vec, score_stds, name_vec, is.va = FALSE){
+  rtable = summary(rank_vec)
+  stable = summary(score_vec)
+  rank_vals = c(rtable[1], rtable[6], rtable[3], mean(rank_vec))
+  rank_sds = c(rank_stds[rank_vec == rtable[1]][1], rank_stds[rank_vec == rtable[6]][1], rank_stds[rank_vec == rtable[3]][1], sd(rank_vec))
+  score_vals = c(stable[1], stable[6], stable[3], mean(score_vec))
+  score_sds = c(score_stds[score_vec == stable[1]], score_stds[score_vec == stable[6]], score_stds[score_vec == stable[3]], sd(score_vec))
+  feats_r = c(name_vec[rank_vec == rtable[1]][1], name_vec[rank_vec == rtable[6][1]], name_vec[rank_vec == rtable[3][1]], NA)
+  feats_s = c(name_vec[score_vec == stable[1][1]], name_vec[score_vec == stable[6][1]], name_vec[score_vec == stable[3][1]], NA)
+ 
+
+row_names = c('Min', 'Max', 'Median', 'Mean')
+rdf = data.frame(Average.rank = rank_vals, Rank.stds = rank_sds, Rank.feature = feats_r, Average.score = score_vals, Score.stds = score_sds, Score.feature = feats_s, row.names = row_names)
+return(rdf)
+}
+```
+
+# Introduction
+$\indent$Animation has emerged as a popular form of media among both young ones and adults and the industry is still improving in the era of technological advances. As of 2015, the global animation industry was estimated to be worth \$244 billion with some major markets being the United States, Canada, Japan, China, France, Britain, Korea and Germany(Research and Markets). One of the most popular forms of animation, anime, comes from Japan. Japan's anime market was worth more than \$18 billion in 2016, which was 9.9% higher than the previous year(The Asahi Shimbun). With such a large, and increasing, demand for this form of Japanese media, it is imperative to know what customers want to see when choosing which show or movie to indulge in. \newline
+$\indent$Generally, good TV shows and movies share qualities that draw customers in. An online study in June 2016 showed that the genre of the content and the cast members were the two most important factors when deciding what to watch(Statista). This study's aim is to see if those important factors hold true for anime while also looking at other factors available to see what features scored best and were most popular.
+
+# Data and Methodology
+$\indent$The data was scraped off of myanimelist.net using Python and the data was analyzed using R. The data consists of the title, rank, score, genre, studio, voice actors, and media type for the 950 most popular anime as of September 2018. A head view of the data can be seen below in table 1. The rank of the anime is the
+\newline
+$\indent$ ***Table 1.*** _The head of the data scraped from myanimelist.net. The voice actors column was truncated to $\indent$four entries for formatting but the data had up to 10 entries per anime._
+```{r, echo = FALSE}
+kable(head(df[,c(1,3,2,4,8,10)]), digits = 3, booktabs = T) %>%
+kable_styling(latex_options = "striped", full_width = T) %>%
+column_spec(c(1), width = c("0.5cm")) %>%
+column_spec(2, width = "6cm") %>%
+column_spec(5, width = "3cm")
+kable(head(df[,c(1,7)]), booktabs = T) %>%
+kable_styling(latex_options = "striped", full_width = T) %>%
+column_spec(1, width = "0.5cm")
+kable(head(vadfshow), booktabs = T) %>%
+kable_styling(latex_options = "striped", full_width = T) %>%
+column_spec(1, width = "0.5cm")
+```
+{\parindent0pt popularity} of it based on users who said they watched it on the website. The score is the mean score from user ratings. In anime, there are three main types of media: TV, movies, and OVAs. TV and movies are just like any other TV show and movie while OVAs are original video animations. OVAs can vary in length and are about a show or movie but do not have to follow the story. Another media type is a special and is like an OVA in that it does not need to follow the story. As we can see from the genres section, animes, like other media, can fall under multiple genres. Lastly, the voice actors column contains up to ten of the voice actors for the most popular characters in the anime. The table displays only 4 voice actors for formatting.
+\newline
+$\indent$The data was aggregated by feature for each column and various summary statistics were found for each feature to see if certain characteristics appeared to perform better than others. Only features with more than twenty occurrences were analyzed. This twenty count threshold was much more easily satisfied by features in the genre and voice actor columns because these variables could take on multiple values while the studio and media type variables could only be one value. 
+
+# Results and Discussion
+$\indent$The first variable that was looked at was the studio. The average rank and score for each studio were found and the minimum, maximum, median, and mean values were tabulated for the mean values. These values can be seen in Table 2 below. In the table, it is shown that Kyoto Animation was the lowest ranked
+\newline
+$\indent$ ***Table 2.*** _Summary statistics for the studio variable. The values are the min, max, and median values of $\indent$the average rank or score for a studio. The mean column is the mean of the means._
+```{r, echo = FALSE}
+kable(resulttable(studio.ranks, studio.rankstd, studio.means, studio.stds, studio.names), digits = 3) %>%
+kable_styling(latex_options = "striped", full_width = T)
+```
+{\parindent0pt and the highest scored on average.} The rankings are based on popularity so it is natural to expect that higher scored shows would have lower rank numbers because better shows should
+```{r,echo = FALSE}
+grid.arrange(plot5,plot6,ncol=2)
+```
+$\indent$***Figure 1.*** _Average rank vs. occurrence count(left) and average score vs. occurrence count(right)._ \newline \newline
+draw in more views. This general trend can be seen in Figure 1 for the rest of the studios.\newline
+$\indent$ A similar analysis was done for the media type. However, unlike the studios, there were only four types of media that had more than twenty instances in the dataset. Because of this, it was unnecessary to make a
+```{r, echo = FALSE}
+grid.arrange(plot7,plot8, ncol=2)
+```
+$\indent$***Figure 2.*** _Average rank vs occurrence count and average score vs occurrence count for media type._
+summary table as the values can be seen in Figure 2. The ratings for the four different media types were all very similar with the difference between the max score and min score being only about 0.12. It seems that viewers didn't particularly think that one form of media had better quality than another. \newline
+$\indent$Although the score did not seem to change between media type, it seems that viewers tended to watch TV shows most often with movies coming in second. TV shows and movies generally have better storylines then OVAs and specials. OVAs and specials could be based off of an existing anime but do not have to follow the story. Because of this, the storyline in these could be seen as unimportant and appear less desirable to watch. The difference in rankings for TV shows and movies can be attributed to the longer stories of a series. Movies are usually a one and done when it comes to watching while a series is watched weekly and can possibly span multiple years depending on the show. Because of the longer story, the show can stay relevant for longer leading to more popularity and more reviews on myanimelist.net. The popularity of TV shows could also be seen in the amount of shows that are made. In this sample of anime, the TV show count was almost eight times higher than movies which was the second highest. If TV shows were not so popular, production companies probably would not make so many.\newline
+$\indent$The next variable that was analyzed was the genre of an anime. With genres being voted the biggest factor in determining what to watch, it was expected that genres would have a wide range of average ranks. Like what was done for the studio variable, summary statistics were found for the different genres and the minimum, maximum, median, and mean values for the average rank and scores of each genre are shown in Table 3. As we can see from Table 3, the difference between the minimum and maximum average ranks was only approximately 138 ranks while the standard deviation was 249 for both of the values. A similar scenario can be said for the minimum and maximum scores. The difference in scores was about 0.41, which is not terribly low, but the standard deviation was 0.94 and 0.51 for the minimum and maximum, respectively. \newline \newline
+$\indent$ ***Table 3.*** _Summary statistics for the genre variable. The values are the min, max, and median values of $\indent$the average rank or score for a genre. The mean column is the mean of the means._
+```{r, echo = FALSE}
+kable(resulttable(genre.ranks, genre.rankstd, genre.means, genre.stds, genre.names), digits = 3) %>%
+kable_styling(latex_options = "striped", full_width = T)
+```
+The small difference between ranks can be a result of an oversaturation of the market with popular genres. If there are so many shows that are classified as being a drama, then it is a given that there will be several small name animes with the drama classification that don't ever become popular. Additionally, an oversaturation of the market can result in the production of several bad animes. These bad animes would then be rated poorly and bring down the rating of the genre overall. A spread of the average rank and scores can be seen in Figure 3 below.
+```{r,echo = FALSE}
+grid.arrange(plot1,plot2,ncol=2)
+```
+$\indent$***Figure 3.*** _Average rank vs occurrence count and average score vs occurrence count for genre._
+\newline
+As shown in the rank plot, the top three genre counts are comedy, action, and romance. All three of these genres hover near the mean value of 467 and don't perform better which was expected. Again, there are some points that do stand out, but with such high standard deviations it cannot be definitively said that one genre performs better than another. \newline
+$\indent$ The last variable explored was voice actors. Like genres, the cast members, which voice actors would fall under, was voted as a very important factor in deciding what to watch according to the 2016 online survey. Table 4 shows that the range of ranks and scores is much larger for different voice actors than it was for the other variables. The difference between the maximum and minimum ranks is about 324 and the difference in scores is about 0.70. Also, the standard deviations for these two measures are about equal or less than the ranges which was unlike the other variables where generally, the standard deviations were larger than the distance from the minimum and maximum values. A plot of all average ranks and average scores can be seen in Figure 4. \newline
+$\indent$ ***Table 4.*** _Summary statistics for the voice actor variable. The values are the min, max, and median  $\indent$values of the average rank or score for a voice actor. The mean column is the mean of the means._
+```{r,echo = FALSE}
+kable(resulttable(va.ranks, va.rankstd, va.means, va.stds, va.names, is.va = TRUE), digits = 3) %>%
+kable_styling(latex_options = "striped", full_width = T)
+grid.arrange(plot3,plot4,ncol=2)
+```
+$\indent$***Figure 4.*** _Average rank vs occurrence count and average score vs occurrence count for voice actor._
+$\indent$Again, we can see that the range of the average ranks is large when we compare that to the range of the other variables. A similar trend can be seen with the scores. This larger range could mean that the voice actors have a larger affect on which anime is popular. To see the exact names of all the features and their average score and rank, refer to Table A1 in Appendix A. Lastly, it is good to reiterate that when taking into account the large standard deviations of all variables, it would make sense to make an initial judgement that one cannot say the features and their ratings are statistically different from each other. 
+
+# Conclusion
+$\indent$Data on the popularity and score of an anime was explored to see if the studio that produced it, the type of media it is, the genre it is classified as, or the voice actors in it affect the success of the anime. Each variable had features with large standard deviations so it cannot be said that any feature was statistically significant in affecting the success in this data sample. If one wanted to make a clain regardless, the ratio of the range of the data to the standard deviation of those two points making the range was largest for the voice actors variable. Therefore, voice actors appeared to be the most significant factor. In the future, an analysis on a larger and more random dataset should be done. This data consisted of the top 950 shows, but with over 15000 shows, a better sample can be obtained.
+
+# Bibliography
+Research and Markets. "Global Animation Industry Report 2017: The Most Authoritative Global Animation Industry Analysis." GlobeNewswire News Room, "GlobeNewswire", 16 Jan. 2017.
+\newline \newline
+"Japan's Anime Market in 2016 Worth More than 2 Trillion Yen." Translated by The Asahi Shimbun, The Asahi Shimbun, 10 Dec. 2017.
+\newline \newline
+Statista. "Factors Influencing the Decision What to Watch in the U.S. 2016 | Statistic." Statista.
+\newpage
+
+# Appendix A: Tables
+***Table A1.*** _The average ranks and scores as well as their standard deviations are organized by descending count number for the number of times that voice actor appeared in the dataset. The minimum count number was set to 20._
+```{r, echo = FALSE}
+kable(data.frame(Voice.actor = va.names, Average.Rank = va.ranks, Rank.std = va.rankstd, Average.Score = va.means, Score.std = va.stds),digits=3, longtable = TRUE) %>%
+kable_styling(latex_options = c("striped",'repeat_header'), full_width = T)
+```
+\newpage
+_**Table A2.**_ _The average ranks and scores as well as their standard deviations are organized by $\indent$descending count number for the number of times that genre appeared in the dataset. The minimum count $\indent$number was set to 20._
+```{r, echo = FALSE}
+kable(data.frame(Genre = genre.names, Average.Rank = genre.ranks, Rank.std = genre.rankstd, Average.Score = genre.means, Score.std = genre.stds),digits=3) %>%
+kable_styling(latex_options = "striped", full_width = T)
+```
+\newpage
+_**Table A3.**_ _The average ranks and scores as well as their standard deviations are organized by $\indent$descending count number for the number of times that studio appeared in the dataset. The minimum $\indent$count number was set to 20._
+```{r, echo = FALSE}
+kable(data.frame(Studio = studio.names, Average.Rank = studio.ranks, Rank.std = studio.rankstd, Average.Score = studio.means, Score.std = studio.stds),digits=3) %>%
+kable_styling(latex_options =c("striped"), full_width = T)
+```
+
