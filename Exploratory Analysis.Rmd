@@ -1,7 +1,7 @@
 ---
 title: "Features Affecting Anime Popularity and Scoring"
 author: "Dexter Luu"
-output: rmarkdown::github_document
+output: pdf_document
 indent: TRUE
 ---
 ```{r, include = FALSE}
