@@ -22,6 +22,7 @@ options(knitr.table.format = "latex")
 df = read.csv('anime_info.csv')
 
 cleanlists = function(x){
+  # The function cleans the python list objects that were converted to string
   # x is the genre and voice actor column in the data
   # coerce factor to characters
   # Will be used to replace original voice actor and genre columns in dataset
@@ -37,6 +38,8 @@ df$voice.actors=sapply(df$voice.actors, FUN=cleanlists)
 df$genres=sapply(df$genres, FUN=cleanlists)
 
 Counter = function(lst){
+  # The function counts the occurrence of each element in the voice actors and genre data.
+  # For a single show, multiple voice actors and genres can describe it so counting these is different
   # lst is the voice.actors list or genre list created by cleanlists
   # Returns a table of the unique voice actors or genres and their counts in the dataset
   vec = c()
@@ -50,6 +53,7 @@ vactorCount = Counter(df$voice.actors)
 genreCount = Counter(df$genres)
 
 find_in = function(lst,feature){
+  # Creates a function to be used for conditional indexing. Creating a function allows the use of sapply
   # To be used along with sapply for conditional indexing
   return(feature %in% lst)
 }
