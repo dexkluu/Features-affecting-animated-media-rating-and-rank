@@ -16,7 +16,7 @@ To replicate my results, one could simply knit the R markdown file to pdf. The d
 ## Author(s)
 
 * **Dexter Luu**
-111
+```
 Table 1. The head of the data scraped from myanimelist.net. The voice actors column was truncated to
 four entries for formatting but the data had up to 10 entries per anime.
 X Title Rank Score studio media.type
