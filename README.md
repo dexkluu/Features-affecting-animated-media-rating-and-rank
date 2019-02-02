@@ -2,7 +2,7 @@
 A full report on the study can be found [here](https://docs.google.com/viewer?url=https://github.com/dexkluu/Features-affecting-animated-media-rating-and-rank/raw/master/R_Markdown_Output%2C%20Exploratory%20Analysis.pdf).
 
 ## Overview
-Exploratory data analysis was performed to gain insights into whether customers prefer certain features of anime more than others.
+With Japanese anime becoming even more mainstream worldwide in recent years, it is imperative that businesses know what will sell. Exploratory data analysis was performed from web scraped data to gain insights into whether customers prefer certain features of anime more than others.
 
 ## Tools Used
 
