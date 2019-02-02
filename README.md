@@ -17,3 +17,7 @@ To replicate my results, one could simply knit the R markdown file to pdf. The d
 
 ## Author
 * **Dexter Luu**
+
+<br>
+
+[Go back to the main project page](https://dexkluu.github.io/Dexter/)
