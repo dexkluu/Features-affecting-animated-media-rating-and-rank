@@ -1,5 +1,5 @@
 # Note
-A full report on the study can be found [here](R_Markdown_Output, Exploratory Analysis.pdf).
+A full report on the study can be found ![here](R_Markdown_Output, Exploratory Analysis.pdf).
 
 # Overview and Data
 Exploratory data analysis was performed to gain insights into whether customers prefer certain features of anime more than others.
